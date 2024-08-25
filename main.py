@@ -9,6 +9,9 @@ import cv2
 import sys
 
 SYSTEM = "Linux"
+SIZE_W = 20
+SIZE_H = 25
+SIZE_G = 2
 
 class EnCrypter(QtCore.QThread):
     updated = QtCore.pyqtSignal(int)
@@ -92,71 +95,68 @@ class EnCrypter(QtCore.QThread):
         
         wrap = self.ui.spinBox.value()
         string_wrap = wrap if wrap > 0 else len(letters)
-        size_w = 40
-        size_h = 50
-        size_gap = 5
         break_start = cv2.imread("./alphabet/break.png", cv2.IMREAD_GRAYSCALE)
-        break_start = cv2.resize(break_start, (size_w, size_h))
+        break_start = cv2.resize(break_start, (SIZE_W, SIZE_H))
         size = math.ceil(len(letters) / string_wrap)
 
-        vis = numpy.zeros((size_gap + size * (size_h + size_gap), (size_gap + size_w) * string_wrap + size_gap), numpy.float32)
+        vis = numpy.zeros((SIZE_G + size * (SIZE_H + SIZE_G), (SIZE_G + SIZE_W) * string_wrap + SIZE_G), numpy.float32)
         vis = numpy.where(vis == 0, 255.0, vis)
 
         files = self.load_letters(f"./alphabet/")
 
         for let_id in range(0, len(letters)):
+
             if letters[let_id] == "_":
                 temp_let = break_start
-            elif letters[let_id] == " ":
+            elif letters[let_id] == " " and os.path.exists(f"./alphabet/space.png"):
                 temp_let = cv2.imread(f"./alphabet/space.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == ".":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "." and os.path.exists(f"./alphabet/dot.png"):
                 temp_let = cv2.imread(f"./alphabet/dot.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == ",":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "," and os.path.exists(f"./alphabet/comma.png"):
                 temp_let = cv2.imread(f"./alphabet/comma.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == ":":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == ":" and os.path.exists(f"./alphabet/double_dot.png"):
                 temp_let = cv2.imread(f"./alphabet/double_dot.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "\'":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "\'" and os.path.exists(f"./alphabet/apos.png"):
                 temp_let = cv2.imread(f"./alphabet/apos.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "~":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "~" and os.path.exists(f"./alphabet/tilda.png"):
                 temp_let = cv2.imread(f"./alphabet/tilda.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "!":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "!" and os.path.exists(f"./alphabet/scream.png"):
                 temp_let = cv2.imread(f"./alphabet/scream.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "?":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "?" and os.path.exists(f"./alphabet/quest.png"):
                 temp_let = cv2.imread(f"./alphabet/quest.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "\"":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "\"" and os.path.exists(f"./alphabet/ddapos.png"):
                 temp_let = cv2.imread(f"./alphabet/ddapos.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
-            elif letters[let_id] == "-":
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
+            elif letters[let_id] == "-" and os.path.exists(f"./alphabet/dash.png"):
                 temp_let = cv2.imread(f"./alphabet/dash.png", cv2.IMREAD_GRAYSCALE)
-                temp_let = cv2.resize(temp_let, (size_w, size_h))
+                temp_let = cv2.resize(temp_let, (SIZE_W, SIZE_H))
             elif os.path.exists(f"./alphabet/{letters[let_id]}.png"):
                 temp_let = files[letters[let_id]]
             else:
                 temp_let = break_start
-            new_y1 = size_gap + let_id//string_wrap * size_h
-            new_y2 = (let_id//string_wrap + 1) * size_h + size_gap
-            new_x1 = size_gap + (let_id % string_wrap)*(size_w+size_gap)
-            new_x2 = (let_id % string_wrap + 1)*(size_w+size_gap)
+                
+            new_y1 = SIZE_G + let_id//string_wrap * SIZE_H
+            new_y2 = (let_id//string_wrap + 1) * SIZE_H + SIZE_G
+            new_x1 = SIZE_G + (let_id % string_wrap)*(SIZE_W+SIZE_G)
+            new_x2 = (let_id % string_wrap + 1)*(SIZE_W+SIZE_G)
             vis[new_y1:new_y2, new_x1:new_x2] = temp_let
             self.updated.emit(int(100*let_id/len(letters)))
         cv2.imwrite("result.png", vis)
         self.updated.emit(100)
 
     def load_letters(self, path):
-        size_w = 40
-        size_h = 50
 
         files = list([f for f in listdir(path) if isfile(join(path, f))])
         break_png = cv2.imread(f"./alphabet/break.png", cv2.IMREAD_GRAYSCALE)
-        break_png = cv2.resize(break_png, (size_w, size_h))
+        break_png = cv2.resize(break_png, (SIZE_W, SIZE_H))
         img_to_str = {"_": break_png}
 
         for f in files:
@@ -164,7 +164,7 @@ class EnCrypter(QtCore.QThread):
                 png_chunk = File.read()
                 png_chunk = numpy.frombuffer(png_chunk, dtype=numpy.uint8)
             letter = cv2.imdecode(png_chunk, cv2.IMREAD_GRAYSCALE)
-            letter = cv2.resize(letter, (size_w, size_h))
+            letter = cv2.resize(letter, (SIZE_W, SIZE_H))
             img_to_str[f.split(".")[0]] = letter
 
         return img_to_str
@@ -188,9 +188,6 @@ class DeCrypter(QtCore.QThread):
         self.win = win
 
     def run(self):
-        size_w = 40
-        size_h = 50
-        size_gap = 5
 
         file_to_img = self.load_letters(f"./alphabet/")
 
@@ -201,8 +198,8 @@ class DeCrypter(QtCore.QThread):
 
         image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
         (width, height) = image.shape
-        string_wrap = (width - size_gap) // (size_h + size_gap)
-        size_letter = (height - size_gap) // (size_gap + size_w)
+        string_wrap = (width - SIZE_G) // (SIZE_H + SIZE_G)
+        size_letter = (height - SIZE_G) // (SIZE_G + SIZE_W)
         result = string_wrap * size_letter
         index_ = 0
         string = ""
@@ -210,10 +207,10 @@ class DeCrypter(QtCore.QThread):
 
         for y in range(string_wrap):
             for x in range(size_letter):
-                new_y1 = size_gap + y * size_h
-                new_y2 = (y + 1) * size_h + size_gap
-                new_x1 = size_gap + x*(size_w+size_gap)
-                new_x2 = (x + 1)*(size_w+size_gap)
+                new_y1 = SIZE_G + y * SIZE_H
+                new_y2 = (y + 1) * SIZE_H + SIZE_G
+                new_x1 = SIZE_G + x*(SIZE_W+SIZE_G)
+                new_x2 = (x + 1)*(SIZE_W+SIZE_G)
                 img = image[new_y1:new_y2, new_x1:new_x2]
                 symbol = [0, "_"]
                 add_is = True
@@ -323,12 +320,9 @@ class DeCrypter(QtCore.QThread):
         self.updated.emit(100)
 
     def load_letters(self, path):
-        size_w = 40
-        size_h = 50
-
         files = list([f for f in listdir(path) if isfile(join(path, f))])
         break_png = cv2.imread(f"./alphabet/break.png", cv2.IMREAD_GRAYSCALE)
-        break_png = cv2.resize(break_png, (size_w, size_h))
+        break_png = cv2.resize(break_png, (SIZE_W, SIZE_H))
         img_to_str = {"_": break_png}
 
         for f in files:
@@ -336,7 +330,7 @@ class DeCrypter(QtCore.QThread):
                 png_chunk = File.read()
                 png_chunk = numpy.frombuffer(png_chunk, dtype=numpy.uint8)
             letter = cv2.imdecode(png_chunk, cv2.IMREAD_GRAYSCALE)
-            letter = cv2.resize(letter, (size_w, size_h))
+            letter = cv2.resize(letter, (SIZE_W, SIZE_H))
             img_to_str[f.split(".")[0]] = letter
 
         return img_to_str
