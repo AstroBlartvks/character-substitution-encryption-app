@@ -8,6 +8,8 @@ import numpy
 import cv2
 import sys
 
+SYSTEM = "Linux"
+
 class EnCrypter(QtCore.QThread):
     updated = QtCore.pyqtSignal(int)
     running = False
@@ -15,6 +17,7 @@ class EnCrypter(QtCore.QThread):
         super(EnCrypter, self).__init__(*args, **kwargs)
         self.rus = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
         self.eng = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        self.symbols = " .,?!:~0123456789"
         self.ui = None
 
     def set_ui(self, ui):
@@ -25,8 +28,68 @@ class EnCrypter(QtCore.QThread):
         text = "_" + text + "_"
         text = text.replace("–", "-")
 
+        type_encrypt = self.ui.comboBox.currentText()
+        letters = []
+
+        if type_encrypt == "Ничего":
+            letters = list(text)
+        elif type_encrypt == "Цезарь":
+            key = self.ui.lineEdit.text()
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in "0123456789" else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ!")
+            key = int(key)
+            for letter_id in range(len(text)):
+                if text[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(text[letter_id]) + key) % len(self.rus)])
+                elif text[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(text[letter_id]) + key) % len(self.eng)])
+                elif text[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(text[letter_id]) + key) % len(self.symbols)])
+                else:
+                    letters.append(text[letter_id])
+        elif type_encrypt == "Вижинер":
+            key = self.ui.lineEdit.text().upper()
+            key_count = 0
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in self.rus + self.eng else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ! Должен состоять из русского и английского алфавитов")
+            for letter_id in range(len(text)):
+
+                key_value = self.rus.index(key[key_count]) if key[key_count] in self.rus else self.eng.index(key[key_count])
+                if text[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(text[letter_id]) + key_value) % len(self.rus)])
+                elif text[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(text[letter_id]) + key_value) % len(self.eng)])
+                elif text[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(text[letter_id]) + key_value) % len(self.symbols)])
+                else:
+                    letters.append(text[letter_id])
+                key_count = (key_count + 1) % len(key)
+        elif type_encrypt == "XOR":
+            key = self.ui.lineEdit.text()
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in "0123456789" else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ!")
+            key = int(key)
+            for letter_id in range(len(text)):
+                if text[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(text[letter_id]) ^ (key % len(self.rus))) % len(self.rus)])
+                elif text[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(text[letter_id]) ^ (key % len(self.eng))) % len(self.eng)])
+                elif text[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(text[letter_id]) ^ (key % len(self.symbols))) % len(self.symbols)])
+                else:
+                    letters.append(text[letter_id])
+        else:
+            letters = list(text)
+        
+
         self.updated.emit(0)
-        letters = list(text)
+        
         wrap = self.ui.spinBox.value()
         string_wrap = wrap if wrap > 0 else len(letters)
         size_w = 40
@@ -110,10 +173,12 @@ class EnCrypter(QtCore.QThread):
 class DeCrypter(QtCore.QThread):
     updated = QtCore.pyqtSignal(int)
     running = False
+
     def __init__(self, *args, **kwargs):
         super(DeCrypter, self).__init__(*args, **kwargs)
         self.rus = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
         self.eng = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        self.symbols = " .,?!:~0123456789"
         self.ui = None
 
     def set_ui(self, ui):
@@ -129,7 +194,11 @@ class DeCrypter(QtCore.QThread):
 
         file_to_img = self.load_letters(f"./alphabet/")
 
-        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self.win, 'Load the picture', r"", "")
+        if SYSTEM == "WINDOWS":
+            file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self.win, 'Load the picture', r"", "")
+        else:
+            file_name = "result.png"
+
         image = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
         (width, height) = image.shape
         string_wrap = (width - size_gap) // (size_h + size_gap)
@@ -189,6 +258,67 @@ class DeCrypter(QtCore.QThread):
                 self.updated.emit(int(100*index_/result))
                 index_ += 1
 
+        type_encrypt = self.ui.comboBox.currentText()
+        letters = []
+        
+        if type_encrypt == "Ничего":
+            letters = list(string)
+        elif type_encrypt == "Цезарь":
+            key = self.ui.lineEdit.text()
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in "0123456789" else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ!")
+            key = int(key)
+            for letter_id in range(len(string)):
+                if string[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(string[letter_id]) - key) % len(self.rus)])
+                elif string[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(string[letter_id]) - key) % len(self.eng)])
+                elif string[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(string[letter_id]) - key) % len(self.symbols)])
+                else:
+                    letters.append(string[letter_id])
+        elif type_encrypt == "Вижинер":
+            key = self.ui.lineEdit.text().upper()
+            key_count = 0
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in self.rus + self.eng else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ! Должен состоять из русского и английского алфавитов")
+            for letter_id in range(len(string)):
+
+                key_value = self.rus.index(key[key_count]) if key[key_count] in self.rus else self.eng.index(key[key_count])
+                if string[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(string[letter_id]) - key_value) % len(self.rus)])
+                elif string[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(string[letter_id]) - key_value) % len(self.eng)])
+                elif string[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(string[letter_id]) - key_value) % len(self.symbols)])
+                else:
+                    letters.append(string[letter_id])
+                key_count = (key_count + 1) % len(key)
+        elif type_encrypt == "XOR":
+            key = self.ui.lineEdit.text()
+            key_set = set(key)
+            sum_errors = sum(list([0 if x in "0123456789" else 1 for x in key_set]))
+            if sum_errors > 0: 
+                return self.ui.plainTextEdit.setPlainText("Некорректный ключ!")
+            key = int(key)
+            for letter_id in range(len(string)):
+                if string[letter_id] in self.rus:
+                    letters.append(self.rus[(self.rus.index(string[letter_id]) ^ (key % len(self.rus))) % len(self.rus)])
+                elif string[letter_id] in self.eng:
+                    letters.append(self.eng[(self.eng.index(string[letter_id]) ^ (key % len(self.eng))) % len(self.eng)])
+                elif string[letter_id] in self.symbols:
+                    letters.append(self.symbols[(self.symbols.index(string[letter_id]) ^ (key % len(self.symbols))) % len(self.symbols)])
+                else:
+                    letters.append(string[letter_id])
+        else:
+            letters = list(string)
+        
+        string = "".join(letters)
+
         self.ui.plainTextEdit_2.setPlainText(string.replace("_", "▮"))
         self.updated.emit(100)
 
@@ -219,9 +349,9 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.rus = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
         self.eng = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
+        
         self.ui.comboBox_3.addItems(list(self.rus+self.eng+" 0123456789"))
-
+        
         self.ui.pushButton_2.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
         self.ui.pushButton_3.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
         self.ui.pushButton_6.clicked.connect(self.encrypt)
