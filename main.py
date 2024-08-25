@@ -9,9 +9,9 @@ import cv2
 import sys
 
 SYSTEM = "Linux"
-SIZE_W = 20
-SIZE_H = 25
-SIZE_G = 2
+SIZE_W = 40
+SIZE_H = 50
+SIZE_G = 5
 
 class EnCrypter(QtCore.QThread):
     updated = QtCore.pyqtSignal(int)
